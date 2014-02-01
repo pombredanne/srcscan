@@ -24,9 +24,9 @@ type Config struct {
 	// possible, or else cleared.
 	PathIndependent bool
 
-	NodeJSPackage NodeJSPackageConfig
-	GoPackage     GoPackageConfig
-	Ruby          RubyConfig
+	NPMPackage NPMPackageConfig
+	GoPackage  GoPackageConfig
+	Ruby       RubyConfig
 }
 
 func (c Config) skipDir(name string) bool {
@@ -40,7 +40,7 @@ func (c Config) skipDir(name string) bool {
 
 var Default = Config{
 	SkipDirs: []string{"node_modules", "vendor", "testdata", "site-packages", "bower_components"},
-	NodeJSPackage: NodeJSPackageConfig{
+	NPMPackage: NPMPackageConfig{
 		TestDirs:          []string{"test", "tests", "spec", "specs", "unit", "mocha", "karma", "testdata"},
 		TestSuffixes:      []string{"test.js", "tests.js", "spec.js", "specs.js"},
 		SupportDirs:       []string{"build_support"},
@@ -78,6 +78,7 @@ func (c Config) Scan(dir string) (found []Unit, err error) {
 
 	c.Base, _ = filepath.Abs(c.Base)
 
+	skipFiles := false
 	for _, profile := range profiles {
 		err = filepath.Walk(dir, func(path string, info os.FileInfo, inerr error) (err error) {
 			if inerr != nil {
@@ -107,9 +108,13 @@ func (c Config) Scan(dir string) (found []Unit, err error) {
 					if profile.TopLevelOnly {
 						return filepath.SkipDir
 					}
+					// skip trying to match the files if gems or apps are found
+					if profile.Name == "Ruby Gem" || profile.Name == "Ruby app" {
+						skipFiles = true
+					}
 				}
 			} else {
-				if profile.File != nil && profile.File.FileMatches(path) {
+				if !skipFiles && profile.File != nil && profile.File.FileMatches(path) {
 					relpath, abspath := c.relAbsPath(path)
 					found = append(found, profile.Unit(abspath, relpath, c, info))
 				}

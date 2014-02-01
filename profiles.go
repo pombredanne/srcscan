@@ -69,9 +69,14 @@ func (c FileHasSuffix) FileMatches(path string) bool {
 
 var AllProfiles = []Profile{
 	Profile{
-		Name: "node.js package",
+		Name: "NPM package",
 		Dir:  FileInDir{"package.json"},
-		Unit: readNodeJSPackage,
+		Unit: readNPMPackage,
+	},
+	Profile{
+		Name: "Bower component",
+		Dir:  FileInDir{"bower.json"},
+		Unit: readBowerComponent,
 	},
 	Profile{
 		Name:         "Python package and module",
@@ -106,5 +111,11 @@ var AllProfiles = []Profile{
 		Dir:  FileInDir{"config.ru"},
 		Unit: readRubyApp,
 	},
-	// TODO(sqs): support Ruby apps (i.e., non-gem Ruby projects)
+	Profile{
+		Name: "Ruby file",
+		File: FileHasSuffix{".rb"},
+		Unit: func(abspath, relpath string, config Config, info os.FileInfo) Unit {
+			return &RubyFile{relpath}
+		},
+	},
 }
